@@ -13,28 +13,23 @@ from torch import nn
 app = Flask(__name__)
 CORS(app)
 
-# Reduce CPU threads (helps memory on Render free tier)
+# Reduce CPU usage (important for Render free tier)
 torch.set_num_threads(1)
 
-# -------------------------------
-# Device (force CPU for stability)
-# -------------------------------
 device = torch.device("cpu")
 
 # -------------------------------
-# Load lightweight model (MobileNet)
+# Load model (MobileNet)
 # -------------------------------
 model = models.mobilenet_v2(weights=None)
 model.classifier[1] = nn.Linear(model.last_channel, 2)
 
-# Load trained weights
 model.load_state_dict(torch.load("malaria_model.pth", map_location=device))
-
 model = model.to(device)
 model.eval()
 
 # -------------------------------
-# Image transform
+# Transform
 # -------------------------------
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -63,12 +58,17 @@ def predict():
 
         with torch.no_grad():
             output = model(image)
+
+            # Prediction
             _, predicted = torch.max(output, 1)
 
-        result = classes[predicted.item()]
+            # Confidence
+            probabilities = torch.softmax(output, dim=1)
+            confidence = probabilities[0][predicted.item()].item()
 
         return jsonify({
-            "prediction": result
+            "prediction": classes[predicted.item()],
+            "confidence": round(confidence * 100, 2)
         })
 
     except Exception as e:
@@ -76,7 +76,7 @@ def predict():
 
 
 # -------------------------------
-# Local run (ignored by Gunicorn)
+# Local run (ignored in Render)
 # -------------------------------
 if __name__ == "__main__":
     import os

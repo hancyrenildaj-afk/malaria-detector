@@ -33,6 +33,7 @@
 <br><br>
 <button onclick="uploadImage()">Predict</button>
 
+<h3 id="loading" style="display:none;">⏳ Processing...</h3>
 <h2 id="result"></h2>
 
 <script>
@@ -47,21 +48,32 @@ function uploadImage() {
     let formData = new FormData();
     formData.append("file", file);
 
-    fetch("http://127.0.0.1:5000/predict", {
+    // Show loading
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("result").innerText = "";
+
+    fetch("https://malaria-backend-ussf.onrender.com/predict", {
         method: "POST",
         body: formData
     })
     .then(res => res.json())
     .then(data => {
-        if (data.prediction) {
-            document.getElementById("result").innerText =
-                "Prediction: " + data.prediction;
-        } else {
+        document.getElementById("loading").style.display = "none";
+
+        if (data.error) {
             document.getElementById("result").innerText =
                 "Error: " + data.error;
+        } else {
+            document.getElementById("result").innerText =
+                "Prediction: " + data.prediction +
+                " (" + data.confidence + "% confidence)";
         }
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("result").innerText = "Error connecting to server";
+        console.error(err);
+    });
 }
 </script>
 
