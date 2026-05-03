@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Malaria Detection</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #eef7ff;
+            margin-top: 80px;
+        }
+        h1 {
+            color: #0066cc;
+        }
+        button {
+            padding: 10px;
+            background: #0099cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #007acc;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🧬 Malaria Detection</h1>
+
+<input type="file" id="imageInput">
+<br><br>
+<button onclick="uploadImage()">Predict</button>
+
+<h2 id="result"></h2>
+
+<script>
+function uploadImage() {
+    let file = document.getElementById("imageInput").files[0];
+
+    if (!file) {
+        alert("Upload an image first!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.prediction) {
+            document.getElementById("result").innerText =
+                "Prediction: " + data.prediction;
+        } else {
+            document.getElementById("result").innerText =
+                "Error: " + data.error;
+        }
+    })
+    .catch(err => console.error(err));
+}
+</script>
+
+</body>
+</html>
