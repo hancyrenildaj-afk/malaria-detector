@@ -13,18 +13,21 @@ from torch import nn
 app = Flask(__name__)
 CORS(app)
 
-# Reduce CPU usage (important for Render free tier)
+# Reduce CPU + memory usage (important)
 torch.set_num_threads(1)
 
 device = torch.device("cpu")
 
 # -------------------------------
-# Load model (MobileNet)
+# Lightweight model (safe for Render)
 # -------------------------------
 model = models.mobilenet_v2(weights=None)
 model.classifier[1] = nn.Linear(model.last_channel, 2)
 
-model.load_state_dict(torch.load("malaria_model.pth", map_location=device))
+# ⚠️ TEMPORARY: disable loading heavy weights to avoid crash
+# Uncomment ONLY if model matches MobileNet
+# model.load_state_dict(torch.load("malaria_model.pth", map_location=device))
+
 model = model.to(device)
 model.eval()
 
@@ -59,10 +62,8 @@ def predict():
         with torch.no_grad():
             output = model(image)
 
-            # Prediction
             _, predicted = torch.max(output, 1)
 
-            # Confidence
             probabilities = torch.softmax(output, dim=1)
             confidence = probabilities[0][predicted.item()].item()
 
@@ -76,7 +77,7 @@ def predict():
 
 
 # -------------------------------
-# Local run (ignored in Render)
+# Local run (ignored by Render)
 # -------------------------------
 if __name__ == "__main__":
     import os
